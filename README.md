@@ -57,9 +57,8 @@ python deploy.py --secret <YOUR_TESTNET_SECRET>
 - [x] **Writing tests for contracts and frontend**: Rust unit tests included in `contracts/*/src/test.rs`.
 
 ## 📷 Screenshots
+### 1. Active Campaigns
+![Active Campaigns](./screenshots/active_campaigns.png)
 
-### Active Campaigns & Pledging
-![Active Campaigns](./screenshots/dashboard_simulated.png)
-
-### Create a Campaign
-![Create Campaign](./screenshots/welcome_screen.png)
+### 2. Create Campaign
+![Create Campaign](./screenshots/create_campaign.png)
