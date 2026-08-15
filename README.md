@@ -1,89 +1,60 @@
-# Stellar Pay - Stellar Journey to Mastery (Level 1: White Belt)
+# Stellar Crowdfund - Orange Belt Submission
 
-A polyglot decentralized application (dApp) built on the Stellar Testnet, showcasing wallet integrations, native XLM balance checks, instant faucet funding, and client-signed testnet transactions.
+A Decentralized Crowdfunding platform built on Stellar using **Python and Rust only**. 
+This project fulfills the Level 3 (Orange Belt) requirements for the Stellar Journey to Mastery challenge.
 
-This repository implements the requirements for **Level 1 (White Belt)** of the *Stellar Journey to Mastery* Monthly Builder Challenge.
+## 🛠️ Architecture & Tech Stack
 
----
+- **Smart Contracts**: Rust (Soroban)
+  - `Factory`: Deploys new campaign contracts.
+  - `Campaign`: Handles goal tracking, funding, and state management (Active, Successful, Failed).
+- **Frontend UI**: Python (Streamlit)
+  - Mobile-responsive pure Python web app.
+  - Integrates with `stellar-sdk` for simulated wallets and contract interactions.
+- **CI/CD Pipeline**: GitHub Actions
+  - Automatically runs Rust tests (`cargo test`) and Python tests on every push/PR.
+- **Deployment**: Python script (`deploy.py`) to easily build and deploy contracts.
 
-## 🛠️ Tech Stack & Architecture
-
--   **Frontend**: React (v19), TypeScript, Vite, Lucide Icons, and `@stellar/freighter-api` (v6.x) for browser extension signing. Custom Vanilla CSS theme with a fully responsive glassmorphism UI supporting interactive dark/light modes.
--   **Backend API (Rust)**: Axum-based server that acts as a proxy for CoinGecko price data, routes transactions, and coordinates Friendbot faucet funding.
--   **Developer CLI (Python)**: Command-line companion using `stellar-sdk` to quickly generate keys, inspect balances, and execute terminal payments.
-
----
-
-## 🚀 Local Installation & Setup
+## 🚀 Setup & Execution
 
 ### Prerequisites
-1.  **Node.js**: v18+ (with `npm` or `yarn`).
-2.  **Python**: v3.9+ (with `pip`).
-3.  **Rust**: `cargo` (optional, needed only to run the local backend server. The frontend automatically falls back to direct Horizon queries if the backend isn't running).
-4.  **Freighter Wallet Browser Extension**: Installed and configured to **Testnet**.
+1. **Python 3.10+**
+2. **Rust & Cargo** (for building smart contracts)
+3. **Soroban CLI** (optional, for local testing)
 
----
-
-### 1. Frontend Setup
-Navigate to the `frontend` folder, install dependencies, and start the development server:
+### 1. Smart Contracts
+To build and test the Rust Soroban contracts:
 
 ```bash
-cd frontend
-npm install
-npm run dev
+cd contracts
+cargo test
+cargo build --target wasm32-unknown-unknown --release
 ```
 
-The frontend will start running on **`http://localhost:5173`**. Open this URL in your web browser.
-
----
-
-### 2. Backend Setup (Rust - Optional)
-To compile and run the backend proxy server:
+### 2. Frontend (Streamlit)
+To run the pure Python web application:
 
 ```bash
-cd backend
-cargo run
-```
-
-The backend server runs on **`http://localhost:8080`**.
-
----
-
-### 3. Developer CLI Setup (Python)
-To run the Python wallet tool:
-
-```bash
-cd cli
+cd web
 pip install -r requirements.txt
+streamlit run app.py
 ```
+The app will open at `http://localhost:8501`.
 
-Available commands:
+### 3. Deployment
+To deploy the contracts to the Stellar Testnet:
+
 ```bash
-# Generate a new Testnet wallet (Public Key & Secret Seed)
-python wallet.py generate
-
-# Check XLM balance of a public key
-python wallet.py balance <PUBLIC_KEY>
-
-# Fund a public key with 10,000 Testnet XLM via Friendbot
-python wallet.py faucet <PUBLIC_KEY>
-
-# Send testnet XLM using a private secret key
-python wallet.py send <SECRET_SEED> <DESTINATION_PUBLIC_KEY> <AMOUNT> --memo "optional text"
+python deploy.py --secret <YOUR_TESTNET_SECRET>
 ```
 
----
+## ✅ Submission Requirements Fulfilled
+- [x] **Advanced smart contract development**: Factory and Campaign architecture.
+- [x] **Inter-contract communication**: Factory deploying Campaign contracts.
+- [x] **CI/CD pipeline setup**: GitHub Actions configured in `.github/workflows/ci.yml`.
+- [x] **Smart contract deployment workflow**: Handled via `deploy.py`.
+- [x] **Mobile responsive frontend development**: Built with Streamlit (fully responsive out of the box).
+- [x] **Writing tests for contracts and frontend**: Rust unit tests included in `contracts/*/src/test.rs`.
 
-## 📷 Submission Screenshots
-
-Below are the screenshots illustrating the successful integration and execution of the dApp.
-### 1. Welcome Landing Screen
-*Welcome screen of the Stellar Pay application, showing options to connect Freighter or start Simulated Mode.*
-
-![Welcome Screen](./screenshots/welcome_screen.png)
-
-### 2. Active Simulated Wallet Dashboard
-*Simulated dashboard showing funded Testnet XLM balance, recipient transaction form, and transaction history logs.*
-
-![Simulated Wallet Dashboard](./screenshots/dashboard_simulated.png)
-
+## 📷 Screenshots
+*(Please add screenshots of the UI, CI pipeline, and test output to the `screenshots/` folder before submitting)*
