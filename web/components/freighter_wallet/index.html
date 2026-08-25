@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Freighter Wallet Connect</title>
+  <!-- Load official freighter-api bundle from unpkg -->
+  <script src="https://unpkg.com/@stellar/freighter-api@2.0.0/dist/index.min.js"></script>
+  <style>
+    :root {
+      --bg-card: #0e1117;
+      --border-color: #262730;
+      --text-color: #fafafa;
+      --text-muted: #808495;
+      --primary: #ff4b4b;
+      --primary-hover: #ff3333;
+      --success: #09ab3b;
+      --warning: #ffaa00;
+    }
+    body {
+      margin: 0;
+      padding: 10px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text-color);
+      background-color: transparent;
+      box-sizing: border-box;
+    }
+    .wallet-card {
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 16px;
+      background: rgba(26, 28, 36, 0.7);
+      backdrop-filter: blur(8px);
+    }
+    .wallet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .wallet-title {
+      font-weight: 600;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-testnet {
+      background: rgba(255, 170, 0, 0.15);
+      color: var(--warning);
+      border: 1px solid rgba(255, 170, 0, 0.3);
+    }
+    .badge-connected {
+      background: rgba(9, 171, 59, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(9, 171, 59, 0.3);
+    }
+    .badge-disconnected {
+      background: rgba(128, 132, 149, 0.15);
+      color: var(--text-muted);
+      border: 1px solid rgba(128, 132, 149, 0.3);
+    }
+    .btn {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      width: 100%;
+    }
+    .btn:hover {
+      background-color: var(--primary-hover);
+    }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-color);
+      margin-top: 8px;
+    }
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--text-muted);
+    }
+    .btn-sign {
+      background-color: #09ab3b;
+      margin-top: 10px;
+    }
+    .btn-sign:hover {
+      background-color: #089633;
+    }
+    .account-info {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      font-size: 12px;
+      word-break: break-all;
+    }
+    .info-label {
+      color: var(--text-muted);
+      font-size: 11px;
+      margin-bottom: 2px;
+      text-transform: uppercase;
+    }
+    .info-value {
+      font-family: monospace;
+      color: #79c0ff;
+    }
+    .status-msg {
+      font-size: 12px;
+      margin-top: 8px;
+      padding: 8px;
+      border-radius: 6px;
+      display: none;
+    }
+    .status-msg.error {
+      display: block;
+      background: rgba(255, 75, 75, 0.15);
+      color: #ff7b72;
+      border: 1px solid rgba(255, 75, 75, 0.3);
+    }
+    .status-msg.success {
+      display: block;
+      background: rgba(9, 171, 59, 0.15);
+      color: #7ee787;
+      border: 1px solid rgba(9, 171, 59, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="wallet-card" id="walletCard">
+    <div class="wallet-header">
+      <div class="wallet-title">
+        <span>🦊 Freighter Wallet</span>
+      </div>
+      <div>
+        <span class="badge badge-testnet">TESTNET</span>
+        <span class="badge badge-disconnected" id="statusBadge">Disconnected</span>
+      </div>
+    </div>
+
+    <!-- Disconnected State -->
+    <div id="disconnectedState">
+      <button class="btn" id="btnConnect">Connect Freighter</button>
+      <div style="font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 8px;">
+        Requests wallet permission & accesses public key on Testnet.
+      </div>
+    </div>
+
+    <!-- Connected State -->
+    <div id="connectedState" style="display: none;">
+      <div class="account-info">
+        <div class="info-label">Connected Public Key</div>
+        <div class="info-value" id="pubKeyDisplay">G...</div>
+      </div>
+
+      <!-- Transaction Signing Section (visible when Streamlit passes unsigned XDR) -->
+      <div id="signSection" style="display: none; border-top: 1px dashed var(--border-color); padding-top: 10px; margin-top: 10px;">
+        <div class="info-label" style="color: #e3b341;">Pending Soroban Transaction</div>
+        <div style="font-size: 12px; color: var(--text-color); margin-bottom: 6px;" id="signActionLabel">
+          Sign contract invocation with Freighter
+        </div>
+        <button class="btn btn-sign" id="btnSignTx">Approve & Sign Transaction</button>
+      </div>
+
+      <button class="btn btn-outline" id="btnDisconnect">Disconnect Wallet</button>
+    </div>
+
+    <div class="status-msg" id="statusMsg"></div>
+  </div>
+
+  <script>
+    // Streamlit Component Protocol Communication Helper
+    function sendValueToStreamlit(data) {
+      window.parent.postMessage({
+        isStreamlitMessage: true,
+        type: "streamlit:setComponentValue",
+        value: data
+      }, "*");
+    }
+
+    function setFrameHeight() {
+      const height = document.body.scrollHeight || document.documentElement.scrollHeight;
+      window.parent.postMessage({
+        isStreamlitMessage: true,
+        type: "streamlit:setFrameHeight",
+        height: height + 10
+      }, "*");
+    }
+
+    // State Variables
+    let currentAddress = null;
+    let pendingTxXdr = null;
+    let targetNetwork = "TESTNET";
+    let testnetPassphrase = "Test SDF Network ; September 2015";
+
+    const statusBadge = document.getElementById("statusBadge");
+    const disconnectedState = document.getElementById("disconnectedState");
+    const connectedState = document.getElementById("connectedState");
+    const pubKeyDisplay = document.getElementById("pubKeyDisplay");
+    const signSection = document.getElementById("signSection");
+    const signActionLabel = document.getElementById("signActionLabel");
+    const statusMsg = document.getElementById("statusMsg");
+
+    function showStatus(text, isError = false) {
+      statusMsg.textContent = text;
+      statusMsg.className = isError ? "status-msg error" : "status-msg success";
+      statusMsg.style.display = "block";
+      setFrameHeight();
+    }
+
+    function clearStatus() {
+      statusMsg.style.display = "none";
+      statusMsg.textContent = "";
+      setFrameHeight();
+    }
+
+    function getFreighterAPI() {
+      if (window.freighterApi) return window.freighterApi;
+      if (window.freighter) return window.freighter;
+      if (window.parent && window.parent.freighterApi) return window.parent.freighterApi;
+      if (window.parent && window.parent.freighter) return window.parent.freighter;
+      return null;
+    }
+
+    async function checkConnected() {
+      const api = getFreighterAPI();
+      if (!api) return;
+
+      try {
+        let isConnected = false;
+        if (typeof api.isConnected === "function") {
+          const res = await api.isConnected();
+          isConnected = typeof res === "boolean" ? res : res?.isConnected;
+        } else {
+          isConnected = true;
+        }
+
+        if (isConnected && typeof api.isAllowed === "function") {
+          const allowedRes = await api.isAllowed();
+          const isAllowed = typeof allowedRes === "boolean" ? allowedRes : allowedRes?.isAllowed;
+          if (isAllowed) {
+            const addrRes = await api.getAddress();
+            const addr = typeof addrRes === "string" ? addrRes : addrRes?.address;
+            if (addr) {
+              setConnectedUI(addr);
+              sendValueToStreamlit({
+                connected: true,
+                publicKey: addr,
+                network: "TESTNET",
+                action: "connected"
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Freighter status check:", e);
+      }
+    }
+
+    function setConnectedUI(address) {
+      currentAddress = address;
+      statusBadge.textContent = "Connected";
+      statusBadge.className = "badge badge-connected";
+      disconnectedState.style.display = "none";
+      connectedState.style.display = "block";
+      pubKeyDisplay.textContent = address;
+      clearStatus();
+      setFrameHeight();
+    }
+
+    function setDisconnectedUI() {
+      currentAddress = null;
+      pendingTxXdr = null;
+      statusBadge.textContent = "Disconnected";
+      statusBadge.className = "badge badge-disconnected";
+      disconnectedState.style.display = "block";
+      connectedState.style.display = "none";
+      signSection.style.display = "none";
+      clearStatus();
+      setFrameHeight();
+    }
+
+    // Connect button handler
+    document.getElementById("btnConnect").addEventListener("click", async () => {
+      clearStatus();
+      const api = getFreighterAPI();
+      
+      if (!api) {
+        showStatus("Freighter wallet extension not detected. Please install Freighter from freighter.app or use Testnet Secret Key mode.", true);
+        sendValueToStreamlit({
+          connected: false,
+          error: "Freighter extension not found",
+          action: "freighter_not_installed"
+        });
+        return;
+      }
+
+      try {
+        let addr = null;
+        if (typeof api.requestAccess === "function") {
+          const accessRes = await api.requestAccess();
+          addr = typeof accessRes === "string" ? accessRes : (accessRes?.address || accessRes?.publicKey);
+          if (accessRes?.error) {
+            showStatus("Access denied: " + accessRes.error, true);
+            return;
+          }
+        } else if (typeof api.getAddress === "function") {
+          const addrRes = await api.getAddress();
+          addr = typeof addrRes === "string" ? addrRes : addrRes?.address;
+        }
+
+        if (!addr) {
+          const addrRes = await api.getAddress();
+          addr = typeof addrRes === "string" ? addrRes : addrRes?.address;
+        }
+
+        if (addr) {
+          setConnectedUI(addr);
+          showStatus("Wallet connected successfully!");
+          sendValueToStreamlit({
+            connected: true,
+            publicKey: addr,
+            network: "TESTNET",
+            action: "connected"
+          });
+        } else {
+          showStatus("Could not retrieve account address from Freighter.", true);
+        }
+      } catch (err) {
+        showStatus("Connection error: " + (err.message || err), true);
+        sendValueToStreamlit({
+          connected: false,
+          error: err.message || String(err),
+          action: "error"
+        });
+      }
+    });
+
+    // Disconnect button handler
+    document.getElementById("btnDisconnect").addEventListener("click", () => {
+      setDisconnectedUI();
+      sendValueToStreamlit({
+        connected: false,
+        publicKey: null,
+        action: "disconnected"
+      });
+    });
+
+    // Sign Transaction handler
+    document.getElementById("btnSignTx").addEventListener("click", async () => {
+      if (!pendingTxXdr) {
+        showStatus("No pending transaction to sign.", true);
+        return;
+      }
+
+      const api = getFreighterAPI();
+      if (!api) {
+        showStatus("Freighter wallet not available for signing.", true);
+        return;
+      }
+
+      try {
+        showStatus("Requesting signature in Freighter popup...");
+        let signedXdr = null;
+
+        if (typeof api.signTransaction === "function") {
+          const signRes = await api.signTransaction(pendingTxXdr, {
+            networkPassphrase: testnetPassphrase,
+            network: "TESTNET"
+          });
+          signedXdr = typeof signRes === "string" ? signRes : (signRes?.signedTxXdr || signRes?.signedTransaction);
+          if (signRes?.error) {
+            showStatus("Signing rejected: " + signRes.error, true);
+            sendValueToStreamlit({
+              action: "sign_rejected",
+              error: signRes.error
+            });
+            return;
+          }
+        }
+
+        if (signedXdr) {
+          showStatus("Transaction signed successfully!");
+          signSection.style.display = "none";
+          sendValueToStreamlit({
+            action: "signed",
+            signedXdr: signedXdr,
+            publicKey: currentAddress
+          });
+        } else {
+          showStatus("Freighter did not return signed XDR.", true);
+        }
+      } catch (err) {
+        showStatus("Signing error: " + (err.message || err), true);
+        sendValueToStreamlit({
+          action: "sign_error",
+          error: err.message || String(err)
+        });
+      }
+    });
+
+    // Handle incoming messages from Streamlit
+    window.addEventListener("message", (event) => {
+      if (event.data.type === "streamlit:render") {
+        const args = event.data.args || {};
+        
+        // Auto sync address if provided
+        if (args.connected_address && args.connected_address !== currentAddress) {
+          setConnectedUI(args.connected_address);
+        }
+
+        // Check if there is an unsigned transaction to sign
+        if (args.unsigned_xdr) {
+          pendingTxXdr = args.unsigned_xdr;
+          signActionLabel.textContent = args.action_label || "Sign Soroban Contract Invocation";
+          signSection.style.display = "block";
+          setFrameHeight();
+        } else {
+          signSection.style.display = "none";
+          pendingTxXdr = null;
+          setFrameHeight();
+        }
+      }
+    });
+
+    // Initial load
+    window.addEventListener("DOMContentLoaded", () => {
+      setFrameHeight();
+      setTimeout(checkConnected, 500);
+    });
+  </script>
+</body>
+</html>
